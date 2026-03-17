@@ -2,6 +2,9 @@ from fastapi import APIRouter
 
 from backend.api.schemas import (
     ColumnInfo,
+    DaxMeasureSchema,
+    DaxRequest,
+    DaxResponse,
     HistoryItem,
     HistoryListResponse,
     QueryRequest,
@@ -11,6 +14,7 @@ from backend.api.schemas import (
 )
 from backend.database.inspector import get_sample_data, get_schema
 from backend.history.store import get_history, get_history_item, save_query
+from backend.llm.dax_generator import suggest_dax
 from backend.llm.sql_generator import execute_sql, generate_sql
 from backend.visualization.chart_builder import build_chart
 from backend.visualization.chart_picker import pick_chart_type
@@ -107,3 +111,17 @@ def history_detail(item_id: int):
     if not item:
         return {"error": "History item not found"}
     return item
+
+
+@router.post("/dax", response_model=DaxResponse)
+def generate_dax(request: DaxRequest):
+    result = suggest_dax(request.question, request.sql, request.columns)
+    return DaxResponse(
+        measures=[
+            DaxMeasureSchema(
+                name=m.name, expression=m.expression, description=m.description
+            )
+            for m in result.measures
+        ],
+        error=result.error,
+    )

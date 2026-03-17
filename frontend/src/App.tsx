@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { queryData } from "./api/client";
 import ChartView from "./components/ChartView";
+import DaxPanel from "./components/DaxPanel";
 import HistoryPanel from "./components/HistoryPanel";
 import QueryInput from "./components/QueryInput";
 import ResultsTable from "./components/ResultsTable";
@@ -48,6 +49,7 @@ export default function App() {
           <QueryInput onSubmit={handleQuery} isLoading={isLoading} />
           {result && result.chart_json && <ChartView result={result} />}
           {result && <ResultsTable result={result} />}
+          {result && !result.error && result.sql && <DaxPanel result={result} />}
         </div>
       </main>
     </div>

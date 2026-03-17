@@ -46,3 +46,20 @@ class HistoryItem(BaseModel):
 
 class HistoryListResponse(BaseModel):
     items: list[HistoryItem]
+
+
+class DaxRequest(BaseModel):
+    question: str
+    sql: str
+    columns: list[str]
+
+
+class DaxMeasureSchema(BaseModel):
+    name: str
+    expression: str
+    description: str
+
+
+class DaxResponse(BaseModel):
+    measures: list[DaxMeasureSchema]
+    error: str | None = None
