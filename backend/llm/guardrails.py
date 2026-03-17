@@ -46,5 +46,5 @@ def sanitize_sql(sql: str) -> str:
     """Normalize whitespace and strip trailing semicolons."""
     sql = sql.strip()
     sql = re.sub(r"\s+", " ", sql)
-    sql = sql.rstrip(";")
+    sql = sql.rstrip(";").strip()
     return sql
