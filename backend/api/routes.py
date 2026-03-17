@@ -9,6 +9,8 @@ from backend.api.schemas import (
 )
 from backend.database.inspector import get_sample_data, get_schema
 from backend.llm.sql_generator import execute_sql, generate_sql
+from backend.visualization.chart_builder import build_chart
+from backend.visualization.chart_picker import pick_chart_type
 
 router = APIRouter(prefix="/api")
 
@@ -62,13 +64,19 @@ def query_data(request: QueryRequest):
 
     query_result = execute_sql(gen_result.sql)
 
+    chart_type = pick_chart_type(
+        query_result.columns, query_result.rows, gen_result.suggested_chart_type
+    )
+    chart_json = build_chart(chart_type, query_result.columns, query_result.rows)
+
     return QueryResponse(
         question=request.question,
         sql=gen_result.sql,
         explanation=gen_result.explanation,
-        suggested_chart_type=gen_result.suggested_chart_type,
+        suggested_chart_type=chart_type,
         columns=query_result.columns,
         rows=query_result.rows,
         row_count=query_result.row_count,
+        chart_json=chart_json,
         error=query_result.error,
     )
