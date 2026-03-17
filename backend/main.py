@@ -6,13 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.routes import router
 from backend.config import settings
+from backend.database.engine import engine
+from backend.database.models import Base
 from backend.database.seed import seed_database
+from backend.history.store import QueryHistory  # noqa: F401 — register model
 
 logging.basicConfig(level=settings.log_level)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    Base.metadata.create_all(engine)
     seed_database()
     yield
 

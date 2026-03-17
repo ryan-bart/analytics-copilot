@@ -2,12 +2,15 @@ from fastapi import APIRouter
 
 from backend.api.schemas import (
     ColumnInfo,
+    HistoryItem,
+    HistoryListResponse,
     QueryRequest,
     QueryResponse,
     SchemaResponse,
     TableInfo,
 )
 from backend.database.inspector import get_sample_data, get_schema
+from backend.history.store import get_history, get_history_item, save_query
 from backend.llm.sql_generator import execute_sql, generate_sql
 from backend.visualization.chart_builder import build_chart
 from backend.visualization.chart_picker import pick_chart_type
@@ -69,6 +72,16 @@ def query_data(request: QueryRequest):
     )
     chart_json = build_chart(chart_type, query_result.columns, query_result.rows)
 
+    if not query_result.error:
+        save_query(
+            question=request.question,
+            sql=gen_result.sql,
+            explanation=gen_result.explanation,
+            chart_type=chart_type,
+            row_count=query_result.row_count,
+            rows=query_result.rows,
+        )
+
     return QueryResponse(
         question=request.question,
         sql=gen_result.sql,
@@ -80,3 +93,17 @@ def query_data(request: QueryRequest):
         chart_json=chart_json,
         error=query_result.error,
     )
+
+
+@router.get("/history", response_model=HistoryListResponse)
+def list_history():
+    items = get_history()
+    return HistoryListResponse(items=[HistoryItem(**item) for item in items])
+
+
+@router.get("/history/{item_id}")
+def history_detail(item_id: int):
+    item = get_history_item(item_id)
+    if not item:
+        return {"error": "History item not found"}
+    return item

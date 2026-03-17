@@ -32,3 +32,17 @@ class TableInfo(BaseModel):
 
 class SchemaResponse(BaseModel):
     tables: list[TableInfo]
+
+
+class HistoryItem(BaseModel):
+    id: int
+    question: str
+    sql: str
+    explanation: str
+    chart_type: str
+    row_count: int
+    created_at: str
+
+
+class HistoryListResponse(BaseModel):
+    items: list[HistoryItem]

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { queryData } from "./api/client";
 import ChartView from "./components/ChartView";
+import HistoryPanel from "./components/HistoryPanel";
 import QueryInput from "./components/QueryInput";
 import ResultsTable from "./components/ResultsTable";
 import SchemaPanel from "./components/SchemaPanel";
@@ -9,6 +10,7 @@ import type { QueryResponse } from "./types";
 export default function App() {
   const [result, setResult] = useState<QueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
   const handleQuery = async (question: string) => {
     setIsLoading(true);
@@ -16,6 +18,7 @@ export default function App() {
     try {
       const data = await queryData(question);
       setResult(data);
+      setHistoryKey((k) => k + 1);
     } catch (err) {
       setResult({
         question,
@@ -37,6 +40,7 @@ export default function App() {
       <aside className="w-64 shrink-0 border-r border-gray-200 bg-white p-4 overflow-y-auto">
         <h2 className="mb-4 text-lg font-semibold text-gray-800">Analytics Copilot</h2>
         <SchemaPanel />
+        <HistoryPanel onSelect={handleQuery} refreshKey={historyKey} />
       </aside>
 
       <main className="flex-1 p-6">
