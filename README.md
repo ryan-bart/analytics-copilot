@@ -117,6 +117,15 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 | MCP | FastMCP with stdio transport |
 | Testing | pytest (35 tests) |
 
+## Docker
+
+```bash
+cd docker
+ANTHROPIC_API_KEY=your-key docker compose up --build
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8000
+```
+
 ## Running Tests
 
 ```bash
