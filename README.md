@@ -14,7 +14,39 @@ Built with Python, FastAPI, React, and Claude to demonstrate end-to-end AI-power
 - **MCP Server** — Use as a tool in Claude Desktop for conversational analytics
 - **SQL Guardrails** — Read-only enforcement prevents any write operations
 
-## Architecture
+## How It Works
+
+The app has two halves — a **React frontend** (Vite dev server on port 5173) and a **Python backend** (FastAPI on port 8000) — connected by a REST API. Vite proxies `/api/*` requests to the backend during development so everything feels like a single app.
+
+### Request lifecycle
+
+Here's what happens when you type a question like "Total premium by product line":
+
+1. **Frontend → Backend** — The React `QueryInput` component sends a `POST /api/query` with `{ "question": "Total premium by product line" }`.
+
+2. **Schema introspection** — The backend reads the SQLite database schema (table names, column types, foreign keys) and builds a DDL string. Low-cardinality VARCHAR columns are annotated with their actual distinct values (e.g. `-- values: 'Auto', 'Home', 'Life'`) so the LLM knows what valid filter values look like.
+
+3. **SQL generation (Claude API)** — The schema DDL and the user's question are sent to Claude (Sonnet). Claude returns a JSON object containing: the SQL query, a plain-English explanation, and a suggested chart type.
+
+4. **Guardrails** — Before executing anything, the generated SQL is validated: it must be a single `SELECT` or `WITH` statement with no blocked keywords (`INSERT`, `DROP`, `ALTER`, etc.). This is a hard gate — if validation fails, the query is rejected.
+
+5. **Execution** — The validated SQL runs against the SQLite database in read-only mode. Results come back as a list of row dictionaries.
+
+6. **Visualization** — The backend picks a chart type (bar, line, pie, scatter, or number card) based on the result shape and Claude's suggestion, then builds a Plotly JSON spec (data + layout). This means chart logic lives server-side — the frontend is just a renderer.
+
+7. **Response** — Everything is bundled into a single JSON response: `sql`, `explanation`, `columns`, `rows`, `chart_json`, and sent back to the frontend.
+
+8. **Rendering** — The frontend renders the results table, the Plotly chart (lazy-loaded via `react-plotly.js`), and a "Generate DAX" button. An `ErrorBoundary` wraps the result area so a rendering failure in one component doesn't crash the whole page.
+
+### DAX generation
+
+Clicking "Generate DAX" sends the question, SQL, and column names to `POST /api/dax`. The backend calls Claude again with a DAX-specific prompt and returns suggested Power BI measures.
+
+### MCP Server
+
+There's also a standalone MCP server (`backend/mcp_server.py`) that exposes the same query/schema/DAX capabilities as tools for Claude Desktop, using stdio transport instead of HTTP.
+
+### Architecture diagram
 
 ```mermaid
 graph TB

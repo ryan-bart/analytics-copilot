@@ -25,8 +25,18 @@ def get_schema() -> dict[str, list[dict]]:
     return schema
 
 
+def _get_distinct_values(table_name: str, column_name: str, limit: int = 10) -> list[str]:
+    """Return distinct values for a VARCHAR column (up to limit)."""
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(f"SELECT DISTINCT {column_name} FROM {table_name} LIMIT :limit"),
+            {"limit": limit},
+        )
+        return [str(row[0]) for row in result.fetchall() if row[0] is not None]
+
+
 def get_schema_ddl() -> str:
-    """Return CREATE TABLE DDL for all tables."""
+    """Return CREATE TABLE DDL for all tables, with enum-like values annotated."""
     inspector = sa_inspect(engine)
     ddl_parts = []
     for table_name in inspector.get_table_names():
@@ -42,6 +52,11 @@ def get_schema_ddl() -> str:
                 parts.append("PRIMARY KEY")
             if not col.get("nullable", True):
                 parts.append("NOT NULL")
+            # Annotate low-cardinality string columns with their actual values
+            if "VARCHAR" in str(col["type"]) and col["name"] not in pk_cols:
+                distinct = _get_distinct_values(table_name, col["name"])
+                if 1 < len(distinct) <= 10:
+                    parts.append(f"-- values: {', '.join(repr(v) for v in distinct)}")
             col_defs.append("  " + " ".join(parts))
 
         for fk in fks:
